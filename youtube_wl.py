@@ -42,12 +42,13 @@ def load_credentials():
     return credentials
 
         
-def playlist_duration(build_obj, pid):
+def playlist_duration(build_obj, pid, add_buffer=False):
     '''This function calculates the duration of a playlist and returns it in seconds.
     
     Args:
         build_obj (googleapiclient.build object): an OAuth 2.0 authorized object able to get details of unlisted content
         pid (string): the playlist id of which to find the duration
+        add_buffer (bool, optional): whether or not to add a one second buffer for each video. Defaults to false.
     
     Returns:
         int: the length of the playlist in seconds
@@ -95,6 +96,8 @@ def playlist_duration(build_obj, pid):
             seconds=seconds
         ).total_seconds()
         total_seconds += vid_seconds
+        if add_buffer:
+            total_seconds += 2
 
     return total_seconds
 
@@ -106,12 +109,15 @@ def main():
     get_all_request = youtube.playlists().list(part='snippet', mine=True)
     get_all_result = get_all_request.execute()
     # find the aaa playlist
+    playlist_id = None
     for item in get_all_result['items']:
         if item['snippet']['localized']['title'] == 'asdf':
-            # get duration of playlist and store playlist id
             playlist_id = item.get('id')
-            duration = playlist_duration(youtube, playlist_id)
             break
+    # get the duration
+    if not playlist_id:
+        raise Exception('No playlist called\'asdf\' found.')
+    duration = playlist_duration(youtube, playlist_id, add_buffer=True)
     # add five fudge seconds
     duration /= int(sys.argv[1])
     duration += 5
